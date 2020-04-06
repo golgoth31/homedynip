@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Client represent an homedynip client
 type Client struct {
 	// Service  string
 	// URL      string
@@ -14,13 +15,14 @@ type Client struct {
 	// Cron     bool
 	// Sleep    time.Duration
 	Config *viper.Viper
-	Ip     *net.IPAddr
+	IP     *net.IPAddr
 }
 
+// Server represent an homedynip server
 type Server struct {
 	Config *http.Server
 }
 
 type response struct {
-	Ip string `json:"ip"`
+	IP string `json:"ip"`
 }

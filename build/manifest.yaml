@@ -1,0 +1,15 @@
+image: golgoth31/homedynip:latest
+manifests:
+  - image: golgoth31/homedynip:amd64
+    platform:
+      architecture: amd64
+      os: linux
+  - image: golgoth31/homedynip:arm64
+    platform:
+      architecture: arm64
+      os: linux
+  # - image: golgoth31/homedynip:arm32v7
+  #   platform:
+  #     architecture: arm
+  #     os: linux
+  #     variant: v7

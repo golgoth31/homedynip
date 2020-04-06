@@ -1,3 +1,4 @@
+// Package cmd ...
 /*
 Copyright © 2020 David Sabatie <david.sabatie@notrenet.com>
 
@@ -33,12 +34,12 @@ var cfgFile string
 // clientCmd represents the client command
 var clientCmd = &cobra.Command{
 	Use:   "client",
-	Short: "Request my own IP adress and send it a dyndns server",
+	Short: "Request my own IP address and send it a dyndns server",
 	Run: func(cmd *cobra.Command, args []string) {
 		client := homedynip.NewClient()
 		client.Config = clientConfig
 
-		output, err := client.GetIp()
+		output, err := client.GetIP()
 		if err != nil {
 			log.Printf("Can't get IP: %v", err)
 		}
@@ -54,36 +55,47 @@ func init() {
 
 	cobra.OnInitialize(initClientConfig)
 	rootCmd.AddCommand(clientCmd)
-
 	clientCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file")
-
 	clientCmd.PersistentFlags().String("url", "", "URL of custom service")
+
 	if err := clientConfig.BindPFlag("client.url", clientCmd.PersistentFlags().Lookup("url")); err != nil {
 		log.Fatalf("Can't bind flag url: %v", err)
 	}
+
 	clientCmd.PersistentFlags().String("service", "", "Service to request")
+
 	if err := clientConfig.BindPFlag("client.service", clientCmd.PersistentFlags().Lookup("service")); err != nil {
 		log.Fatalf("Can't bind flag url: %v", err)
 	}
+
 	clientCmd.PersistentFlags().Bool("insecure", false, "insecure https request")
+
 	if err := clientConfig.BindPFlag("client.insecure", clientCmd.PersistentFlags().Lookup("insecure")); err != nil {
 		log.Fatalf("Can't bind flag url: %v", err)
 	}
+
 	clientCmd.PersistentFlags().Bool("cron", false, "run as cronjob (external scheduling)")
+
 	if err := clientConfig.BindPFlag("client.cron", clientCmd.PersistentFlags().Lookup("cron")); err != nil {
 		log.Fatalf("Can't bind flag url: %v", err)
 	}
-	duration, _ := time.ParseDuration("24h")
+
+	duration, err := time.ParseDuration("24h")
+	if err != nil {
+		log.Fatalf("Unable to parse duration: %v", err)
+	}
+
 	clientCmd.PersistentFlags().Duration("sleep", duration, "Wait duration between 2 IP requests")
+
 	if err := clientConfig.BindPFlag("client.sleep", clientCmd.PersistentFlags().Lookup("sleep")); err != nil {
 		log.Fatalf("Can't bind flag url: %v", err)
 	}
-
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initClientConfig() {
 	replacer := strings.NewReplacer(".", "_")
+
 	clientConfig.SetEnvPrefix("HOMEDYNIP")
 	clientConfig.SetEnvKeyReplacer(replacer)
 	clientConfig.AutomaticEnv()

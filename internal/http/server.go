@@ -9,25 +9,28 @@ import (
 	"time"
 )
 
+const timeout = 10
+
+// NewServer returns a new homedynip server
 func NewServer(port int32) *Server {
 	return &Server{
 		Config: &http.Server{
-			Addr:           fmt.Sprintf(":%d", port),
-			ReadTimeout:    10 * time.Second,
-			WriteTimeout:   10 * time.Second,
-			MaxHeaderBytes: 1 << 20,
+			Addr:         fmt.Sprintf(":%d", port),
+			ReadTimeout:  timeout * time.Second,
+			WriteTimeout: timeout * time.Second,
 		},
 	}
 }
 
+// Start starts the server
 func (s *Server) Start() {
-	s.Config.Handler = http.HandlerFunc(s.echoIp)
+	s.Config.Handler = http.HandlerFunc(s.echoIP)
 	log.Fatal(s.Config.ListenAndServe())
 }
 
-func (s *Server) echoIp(w http.ResponseWriter, r *http.Request) {
-
+func (s *Server) echoIP(w http.ResponseWriter, r *http.Request) {
 	var err error
+
 	var ip string
 
 	if r.Header.Get("X-Forwarded-For") != "" {
@@ -39,15 +42,20 @@ func (s *Server) echoIp(w http.ResponseWriter, r *http.Request) {
 			ip = "unknown"
 		}
 	}
+
 	log.Printf("Request from %s", ip)
+
 	output := response{
-		Ip: ip,
+		IP: ip,
 	}
+
 	jData, err := json.Marshal(output)
 	if err != nil {
 		log.Printf("%v", err)
 	}
+
 	w.Header().Set("Content-Type", "application/json")
+
 	_, err = w.Write(jData)
 	if err != nil {
 		log.Printf("Unable to write response: %v", err)

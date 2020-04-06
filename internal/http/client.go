@@ -1,3 +1,4 @@
+// Package http send request to get public ip and response to dyndns provider
 package http
 
 import (
@@ -11,6 +12,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 )
 
+// NewClient returns a new homedynip client
 func NewClient() *Client {
 	return &Client{}
 }
@@ -27,50 +29,68 @@ func (c *Client) client() *http.Client {
 
 func (c *Client) url() (string, string) {
 	log.Printf("service: %s", c.Config.GetString("client.service"))
-	var serviceUrl string
+
+	var serviceURL string
+
 	var respField string
+
 	switch c.Config.GetString("client.service") {
 	case "ipify":
-		serviceUrl = "https://api.ipify.org?format=json"
+		serviceURL = "https://api.ipify.org?format=json"
 		respField = "ip"
 	case "httpbin":
-		serviceUrl = "https://httpbin.org/ip"
+		serviceURL = "https://httpbin.org/ip"
 		respField = "origin"
 	case "custom":
-		serviceUrl = c.Config.GetString("client.url")
+		serviceURL = c.Config.GetString("client.url")
 		respField = "ip"
 	default:
-		serviceUrl = "https://api.ipify.org?format=json"
+		serviceURL = "https://api.ipify.org?format=json"
 		respField = "ip"
 	}
-	log.Printf("url: %s", serviceUrl)
-	return serviceUrl, respField
+
+	log.Printf("url: %s", serviceURL)
+
+	return serviceURL, respField
 }
 
-func (c *Client) getIp() (string, error) {
+func (c *Client) getIP() (string, error) {
 	client := c.client()
 	url, field := c.url()
+
 	resp, err := client.Get(url)
 	if err != nil {
 		log.Printf("could not get answer: %v", err)
 		return "", err
 	}
-	defer resp.Body.Close()
+
+	defer func() {
+		err = resp.Body.Close()
+		if err != nil {
+			log.Print("unable to close body")
+		}
+	}()
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("could not read body: %v", err)
 		return "", err
 	}
+
 	output := jsoniter.Get(body, field).ToString()
-	c.Ip = &net.IPAddr{
+	c.IP = &net.IPAddr{
 		IP: net.ParseIP(output),
 	}
+
 	return output, nil
 }
-func (c *Client) GetIp() (string, error) {
-	return c.getIp()
+
+// GetIP returns the IP given by server
+func (c *Client) GetIP() (string, error) {
+	return c.getIP()
 }
 
+// WriteDNS writes IP to dyndns provider
 func (c *Client) WriteDNS() error {
 	switch c.Config.GetString("client.dns") {
 	case "ovh":
@@ -78,7 +98,7 @@ func (c *Client) WriteDNS() error {
 			Username: c.Config.GetString("ovh.username"),
 			Password: c.Config.GetString("ovh.password"),
 			Hostname: c.Config.GetString("ovh.hostname"),
-			Ip:       c.Ip.String(),
+			IP:       c.IP.String(),
 		}
 		if err := dnsClient.Write(); err != nil {
 			log.Printf("Unable to write into DNS provider: %v", err)
@@ -86,7 +106,8 @@ func (c *Client) WriteDNS() error {
 		}
 	default:
 		log.Printf("Unknown DNS driver: %s", c.Config.GetString("client.dns"))
-		return fmt.Errorf("Unknow DNS driver: %s", c.Config.GetString("client.dns"))
+		return fmt.Errorf("unknow DNS driver: %s", c.Config.GetString("client.dns"))
 	}
+
 	return nil
 }

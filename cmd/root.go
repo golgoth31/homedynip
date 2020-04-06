@@ -1,3 +1,4 @@
+// Package cmd ...
 /*
 Copyright © 2020 David Sabatie <david.sabatie@notrenet.com>
 
@@ -23,6 +24,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const badExitCode = 1
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "homedynip",
@@ -43,16 +46,6 @@ to quickly create a Cobra application.`,
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
-		os.Exit(1)
+		os.Exit(badExitCode)
 	}
-}
-
-func init() {
-	cobra.OnInitialize(initConfig)
-
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-
 }
