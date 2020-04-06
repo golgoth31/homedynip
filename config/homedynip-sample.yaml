@@ -1,0 +1,12 @@
+client:
+  service: ipify
+  url: http://localhost:8080
+  insecure: false
+  cron: false
+  sleep: 1h
+  dns: ovh
+
+ovh:
+  username: xxxxxxxxxxxxxxxxx
+  password: xxxxxxxxxxxxxxxxx
+  hostname: xxxxxxxxxxxxxxxxx
