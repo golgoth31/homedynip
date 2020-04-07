@@ -18,29 +18,24 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
-	homedynip "github.com/golgoth31/homedynip/internal/http"
+	"fmt"
+
+	"github.com/golgoth31/homedynip/internal/configs"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
-// serverCmd represents the server command
-var serverCmd = &cobra.Command{
-	Use:   "server",
-	Short: "Simple server to send back public IP to client",
+// versionCmd represents the version command
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Show Homedynip version",
 	Run: func(cmd *cobra.Command, args []string) {
-		serv := homedynip.NewServer()
-		serv.Config = config
-		serv.Log = &logger
-		serv.Start()
+		fmt.Printf(
+			"%s\n",
+			configs.Version,
+		)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(serverCmd)
-
-	serverCmd.PersistentFlags().Int32("port", 8080, "port to listen on")
-
-	if err := viper.BindPFlag("server.port", serverCmd.PersistentFlags().Lookup("port")); err != nil {
-		logger.Fatal().Err(err).Msgf("Can't bind flag port: %v", err)
-	}
+	rootCmd.AddCommand(versionCmd)
 }

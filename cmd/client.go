@@ -18,17 +18,15 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
-	"log"
-	"strings"
 	"time"
 
 	homedynip "github.com/golgoth31/homedynip/internal/http"
+	"github.com/rs/zerolog"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var clientConfig *viper.Viper
 var cfgFile string
 
 // clientCmd represents the client command
@@ -36,77 +34,79 @@ var clientCmd = &cobra.Command{
 	Use:   "client",
 	Short: "Request my own IP address and send it a dyndns server",
 	Run: func(cmd *cobra.Command, args []string) {
-		client := homedynip.NewClient()
-		client.Config = clientConfig
+		for {
+			if config.GetBool("client.showip") {
+				zerolog.SetGlobalLevel(zerolog.FatalLevel)
+			}
+			client := homedynip.NewClient()
+			client.Log = &logger
+			client.Config = config
 
-		output, err := client.GetIP()
-		if err != nil {
-			log.Printf("Can't get IP: %v", err)
-		}
-		log.Printf("My Ip is: %s", output)
-		if err := client.WriteDNS(); err != nil {
-			log.Printf("Unable to write IP: %v", err)
+			output, err := client.GetIP()
+			if err != nil {
+				logger.Error().Err(err).Msgf("Can't get IP: %v", err)
+			}
+			logger.Info().Msgf("My Ip is: %s", output)
+			if !config.GetBool("client.dryrun") {
+				if err := client.WriteDNS(); err != nil {
+					logger.Error().Err(err).Msgf("Unable to write IP: %v", err)
+				}
+			}
+			if config.GetBool("client.cron") {
+				break
+			}
+			logger.Info().Msgf("sleeping for %v", config.GetDuration("client.sleep"))
+			time.Sleep(config.GetDuration("client.sleep"))
 		}
 	},
 }
 
 func init() {
-	clientConfig = viper.New()
-
-	cobra.OnInitialize(initClientConfig)
 	rootCmd.AddCommand(clientCmd)
-	clientCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file")
 	clientCmd.PersistentFlags().String("url", "", "URL of custom service")
 
-	if err := clientConfig.BindPFlag("client.url", clientCmd.PersistentFlags().Lookup("url")); err != nil {
-		log.Fatalf("Can't bind flag url: %v", err)
+	if err := viper.BindPFlag("client.url", clientCmd.PersistentFlags().Lookup("url")); err != nil {
+		logger.Fatal().Err(err).Msgf("Can't bind flag url: %v", err)
 	}
 
 	clientCmd.PersistentFlags().String("service", "", "Service to request")
 
-	if err := clientConfig.BindPFlag("client.service", clientCmd.PersistentFlags().Lookup("service")); err != nil {
-		log.Fatalf("Can't bind flag url: %v", err)
+	if err := viper.BindPFlag("client.service", clientCmd.PersistentFlags().Lookup("service")); err != nil {
+		logger.Fatal().Err(err).Msgf("Can't bind flag url: %v", err)
 	}
 
-	clientCmd.PersistentFlags().Bool("insecure", false, "insecure https request")
+	clientCmd.PersistentFlags().Bool("insecure", false, "Insecure https request")
 
-	if err := clientConfig.BindPFlag("client.insecure", clientCmd.PersistentFlags().Lookup("insecure")); err != nil {
-		log.Fatalf("Can't bind flag url: %v", err)
+	if err := viper.BindPFlag("client.insecure", clientCmd.PersistentFlags().Lookup("insecure")); err != nil {
+		logger.Fatal().Err(err).Msgf("Can't bind flag url: %v", err)
 	}
 
-	clientCmd.PersistentFlags().Bool("cron", false, "run as cronjob (external scheduling)")
+	clientCmd.PersistentFlags().Bool("cron", false, "Run as cronjob (external scheduling)")
 
-	if err := clientConfig.BindPFlag("client.cron", clientCmd.PersistentFlags().Lookup("cron")); err != nil {
-		log.Fatalf("Can't bind flag url: %v", err)
+	if err := viper.BindPFlag("client.cron", clientCmd.PersistentFlags().Lookup("cron")); err != nil {
+		logger.Fatal().Err(err).Msgf("Can't bind flag url: %v", err)
 	}
 
 	duration, err := time.ParseDuration("24h")
 	if err != nil {
-		log.Fatalf("Unable to parse duration: %v", err)
+		logger.Fatal().Err(err).Msgf("Unable to parse duration: %v", err)
 	}
 
-	clientCmd.PersistentFlags().Duration("sleep", duration, "Wait duration between 2 IP requests")
+	clientCmd.PersistentFlags().Duration("sleep", duration, "Wait for duration between 2 IP requests")
 
-	if err := clientConfig.BindPFlag("client.sleep", clientCmd.PersistentFlags().Lookup("sleep")); err != nil {
-		log.Fatalf("Can't bind flag url: %v", err)
+	if err := viper.BindPFlag("client.sleep", clientCmd.PersistentFlags().Lookup("sleep")); err != nil {
+		logger.Fatal().Err(err).Msgf("Can't bind flag url: %v", err)
 	}
-}
 
-// initConfig reads in config file and ENV variables if set.
-func initClientConfig() {
-	replacer := strings.NewReplacer(".", "_")
+	clientCmd.PersistentFlags().Bool("dryrun", false, "Only request IP service")
 
-	clientConfig.SetEnvPrefix("HOMEDYNIP")
-	clientConfig.SetEnvKeyReplacer(replacer)
-	clientConfig.AutomaticEnv()
+	if err := viper.BindPFlag("client.dryrun", clientCmd.PersistentFlags().Lookup("dryrun")); err != nil {
+		logger.Fatal().Err(err).Msgf("Can't bind flag dryrun: %v", err)
+	}
 
-	if cfgFile != "" {
-		// Use config file from the flag.
-		clientConfig.SetConfigFile(cfgFile)
+	clientCmd.PersistentFlags().Bool("showip", false, "Only print out Received IP")
 
-		err := clientConfig.ReadInConfig()
-		if err != nil {
-			log.Fatalf("Can't read config: %v", err)
-		}
+	if err := viper.BindPFlag("client.showip", clientCmd.PersistentFlags().Lookup("showip")); err != nil {
+		logger.Fatal().Err(err).Msgf("Can't bind flag showip: %v", err)
 	}
 }

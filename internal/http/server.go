@@ -3,7 +3,6 @@ package http
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"time"
@@ -12,10 +11,9 @@ import (
 const timeout = 10
 
 // NewServer returns a new homedynip server
-func NewServer(port int32) *Server {
+func NewServer() *Server {
 	return &Server{
-		Config: &http.Server{
-			Addr:         fmt.Sprintf(":%d", port),
+		HTTPConfig: &http.Server{
 			ReadTimeout:  timeout * time.Second,
 			WriteTimeout: timeout * time.Second,
 		},
@@ -24,8 +22,13 @@ func NewServer(port int32) *Server {
 
 // Start starts the server
 func (s *Server) Start() {
-	s.Config.Handler = http.HandlerFunc(s.echoIP)
-	log.Fatal(s.Config.ListenAndServe())
+	s.HTTPConfig.Addr = fmt.Sprintf(":%d", s.Config.GetInt32("server.port"))
+	s.HTTPConfig.Handler = http.HandlerFunc(s.echoIP)
+
+	err := s.HTTPConfig.ListenAndServe()
+	if err != nil {
+		s.Log.Fatal().Err(err).Msg("")
+	}
 }
 
 func (s *Server) echoIP(w http.ResponseWriter, r *http.Request) {
@@ -38,12 +41,12 @@ func (s *Server) echoIP(w http.ResponseWriter, r *http.Request) {
 	} else {
 		ip, _, err = net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
-			log.Printf("userip: %q is not IP:port", r.RemoteAddr)
+			s.Log.Error().Err(err).Msgf("userip: %q is not IP:port", r.RemoteAddr)
 			ip = "unknown"
 		}
 	}
 
-	log.Printf("Request from %s", ip)
+	s.Log.Info().Msgf("Request from %s", ip)
 
 	output := response{
 		IP: ip,
@@ -51,13 +54,13 @@ func (s *Server) echoIP(w http.ResponseWriter, r *http.Request) {
 
 	jData, err := json.Marshal(output)
 	if err != nil {
-		log.Printf("%v", err)
+		s.Log.Error().Err(err).Msgf("%v", err)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 
 	_, err = w.Write(jData)
 	if err != nil {
-		log.Printf("Unable to write response: %v", err)
+		s.Log.Error().Err(err).Msgf("Unable to write response: %v", err)
 	}
 }

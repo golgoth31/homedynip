@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homedynip
+spec:
+  selector:
+    matchLabels:
+      app: homedynip
+  template:
+    metadata:
+      labels:
+        app: homedynip
+    spec:
+      containers:
+        - name: homedynip
+          image: golgoth31/homedynip:latest
+          args:
+            - client
+          env:
+            - name: HOMEDYNIP_CLIENT_SERVICE
+              value: "ipify"
+            - name: HOMEDYNIP_CLIENT_URL
+              value: "http://localhost:8080"
+            - name: HOMEDYNIP_CLIENT_INSECURE
+              value: "false"
+            - name: HOMEDYNIP_CLIENT_CRON
+              value: "false"
+            - name: HOMEDYNIP_CLIENT_SLEEP
+              value: "1h"
+            - name: HOMEDYNIP_CLIENT_DRYRUN
+              value: "false"
+            - name: HOMEDYNIP_CLIENT_DNS
+              value: "ovh"
+            - name: HOMEDYNIP_LOGLEVEL
+              value: "info"
+            - name: HOMEDYNIP_LOGFORMAT
+              value: "json"
+            - name: HOMEDYNIP_OVH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: homedynip
+                  key: username
+            - name: HOMEDYNIP_OVH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: homedynip
+                  key: password
+            - name: HOMEDYNIP_OVH_HOSTNAME
+              valueFrom:
+                secretKeyRef:
+                  name: homedynip
+                  key: hostname
+          resources:
+            limits:
+              memory: "64Mi"
+              cpu: "100m"

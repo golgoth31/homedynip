@@ -4,7 +4,6 @@ package ovh
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 )
 
@@ -28,7 +27,7 @@ func (o *Ovh) Write() error {
 	defer func() {
 		err = resp.Body.Close()
 		if err != nil {
-			log.Print("unable to close body")
+			o.Log.Info().Msgf("unable to close body")
 		}
 	}()
 
@@ -37,7 +36,7 @@ func (o *Ovh) Write() error {
 		return err
 	}
 
-	log.Print(string(body))
+	o.Log.Info().Msg(string(body))
 
 	return nil
 }

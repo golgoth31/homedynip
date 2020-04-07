@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/rs/zerolog"
 	"github.com/spf13/viper"
 )
 
@@ -16,11 +17,14 @@ type Client struct {
 	// Sleep    time.Duration
 	Config *viper.Viper
 	IP     *net.IPAddr
+	Log    *zerolog.Logger
 }
 
 // Server represent an homedynip server
 type Server struct {
-	Config *http.Server
+	HTTPConfig *http.Server
+	Config     *viper.Viper
+	Log        *zerolog.Logger
 }
 
 type response struct {

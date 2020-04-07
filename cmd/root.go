@@ -20,25 +20,24 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
+	"time"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const badExitCode = 1
 
+var logger zerolog.Logger
+var config *viper.Viper
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "homedynip",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
+	Short: "Homedynip",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -47,5 +46,67 @@ func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(badExitCode)
+	}
+}
+
+func init() {
+	cobra.OnInitialize(initConfig)
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file")
+
+	rootCmd.PersistentFlags().String("logLevel", "error", "config file")
+
+	if err := viper.BindPFlag("logLevel", rootCmd.PersistentFlags().Lookup("logLevel")); err != nil {
+		logger.Fatal().Err(err).Msgf("Can't bind flag logLevel: %v", err)
+	}
+
+	rootCmd.PersistentFlags().String("logFormat", "console", "config file")
+
+	if err := viper.BindPFlag("logFormat", rootCmd.PersistentFlags().Lookup("logFormat")); err != nil {
+		logger.Fatal().Err(err).Msgf("Can't bind flag logFormat: %v", err)
+	}
+}
+
+// initConfig reads in config file and ENV variables if set.
+func initConfig() { //nolint:gocyclo
+	replacer := strings.NewReplacer(".", "_")
+	config = viper.GetViper()
+
+	config.SetEnvPrefix("HOMEDYNIP")
+	config.SetEnvKeyReplacer(replacer)
+	config.AutomaticEnv()
+
+	if cfgFile != "" {
+		config.SetConfigFile(cfgFile)
+
+		err := config.ReadInConfig()
+		if err != nil {
+			logger.Fatal().Err(err).Msgf("Can't read config: %v", err)
+		}
+	}
+
+	switch config.GetString("logLevel") {
+	case "debug":
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	case "info":
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	case "warning":
+		zerolog.SetGlobalLevel(zerolog.WarnLevel)
+	case "error":
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	case "fatal":
+		zerolog.SetGlobalLevel(zerolog.FatalLevel)
+	default:
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	}
+
+	switch config.GetString("logFormat") {
+	case "json":
+		logger = log.With().Logger()
+	default:
+		output := zerolog.ConsoleWriter{
+			Out:        os.Stdout,
+			TimeFormat: time.RFC3339,
+		}
+		logger = zerolog.New(output).With().Timestamp().Logger()
 	}
 }
