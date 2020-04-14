@@ -16,3 +16,8 @@ ovh:
   username: xxxxxxxxxxxxxxxxx
   password: xxxxxxxxxxxxxxxxx
   hostname: xxxxxxxxxxxxxxxxx
+
+noip:
+  username: xxxxxxxxxxxxxxxxx
+  password: xxxxxxxxxxxxxxxxx
+  hostname: xxxxxxxxxxxxxxxxx

@@ -1,5 +1,5 @@
-// Package ovh writes IP to dynhost
-package ovh
+// Package noip writes IP to dynhost
+package noip
 
 import (
 	"fmt"
@@ -11,9 +11,13 @@ import (
 const httpStatusCodeOK = 200
 
 // Write function writes IP to dynhost
-func (o *Ovh) Write() error {
+func (o *Noip) Write() error {
 	client := http.DefaultClient
-	url := fmt.Sprintf("https://www.ovh.com/nic/update?system=dyndns&hostname=%s&myip=%s", o.Hostname, o.IP)
+	url := fmt.Sprintf(
+		"https://dynupdate.no-ip.com/nic/update?hostname=%s&myip=%s",
+		o.Hostname,
+		o.IP,
+	)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

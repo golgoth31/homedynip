@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/golgoth31/homedynip/internal/dns/noip"
 	"github.com/golgoth31/homedynip/internal/dns/ovh"
 	jsoniter "github.com/json-iterator/go"
 )
@@ -105,6 +106,18 @@ func (c *Client) WriteDNS() error {
 			Username: c.Config.GetString("ovh.username"),
 			Password: c.Config.GetString("ovh.password"),
 			Hostname: c.Config.GetString("ovh.hostname"),
+			IP:       c.IP.String(),
+			Log:      c.Log,
+		}
+		if err := dnsClient.Write(); err != nil {
+			c.Log.Info().Msgf("Unable to write into DNS provider: %v", err)
+			return err
+		}
+	case "noip":
+		dnsClient := &noip.Noip{
+			Username: c.Config.GetString("noip.username"),
+			Password: c.Config.GetString("noip.password"),
+			Hostname: c.Config.GetString("noip.hostname"),
 			IP:       c.IP.String(),
 			Log:      c.Log,
 		}
