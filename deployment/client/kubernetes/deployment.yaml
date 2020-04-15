@@ -14,6 +14,7 @@ spec:
       containers:
         - name: homedynip
           image: golgoth31/homedynip:latest
+          imagePullPolicy: Always
           args:
             - client
           env:
