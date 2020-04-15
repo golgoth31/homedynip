@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/golgoth31/homedynip/internal/dns/noip"
-	"github.com/golgoth31/homedynip/internal/dns/ovh"
+	"github.com/golgoth31/homedynip/internal/dns"
+
 	jsoniter "github.com/json-iterator/go"
 )
 
@@ -100,34 +100,15 @@ func (c *Client) GetIP() (string, error) {
 
 // WriteDNS writes IP to dyndns provider
 func (c *Client) WriteDNS() error {
-	switch c.Config.GetString("client.dns") {
-	case "ovh":
-		dnsClient := &ovh.Ovh{
-			Username: c.Config.GetString("ovh.username"),
-			Password: c.Config.GetString("ovh.password"),
-			Hostname: c.Config.GetString("ovh.hostname"),
-			IP:       c.IP.String(),
-			Log:      c.Log,
-		}
-		if err := dnsClient.Write(); err != nil {
-			c.Log.Info().Msgf("Unable to write into DNS provider: %v", err)
-			return err
-		}
-	case "noip":
-		dnsClient := &noip.Noip{
-			Username: c.Config.GetString("noip.username"),
-			Password: c.Config.GetString("noip.password"),
-			Hostname: c.Config.GetString("noip.hostname"),
-			IP:       c.IP.String(),
-			Log:      c.Log,
-		}
-		if err := dnsClient.Write(); err != nil {
-			c.Log.Info().Msgf("Unable to write into DNS provider: %v", err)
-			return err
-		}
-	default:
-		c.Log.Info().Msgf("Unknown DNS driver: %s", c.Config.GetString("client.dns"))
-		return fmt.Errorf("unknow DNS driver: %s", c.Config.GetString("client.dns"))
+	dnsProvider, err := dns.New(c.Config, c.IP.String(), c.Log)
+	if err != nil {
+		c.Log.Info().Msgf("Unknown DNS provider: %v", err)
+		return err
+	}
+
+	if err := dnsProvider.Write(); err != nil {
+		c.Log.Info().Msgf("Unable to write into DNS provider: %v", err)
+		return err
 	}
 
 	return nil

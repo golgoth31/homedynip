@@ -8,5 +8,5 @@ type Ovh struct {
 	Password string
 	Hostname string
 	IP       string
-	Log      *zerolog.Logger
+	Log      zerolog.Logger
 }
