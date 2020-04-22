@@ -10,7 +10,6 @@ This project is under development.
 
 ### Binary
 
-    ```bash
     ❯ homedynip help
 
     Homedynip help
@@ -31,7 +30,6 @@ This project is under development.
         --logLevel string    config file (default "error")
 
     Use "homedynip [command] --help" for more information about a command.
-    ```
 
 ### Docker
 
