@@ -36,6 +36,4 @@ This project is under development.
 Use the yaml files from "deployment/client" or "deployment/server" as samples to deploy Homedynip into a kubernetes cluster.
 Generate the needed secret with the following command:
 
-    ```bash
     kubectl create secret generic homedynip --from-literal=username=<your user> --from-literal=password=<your password> --from-literal=hostname=<your hostname>
-    ```
